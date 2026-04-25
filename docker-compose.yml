@@ -1,5 +1,6 @@
 services:
   app:
+    image: signage-app:latest
     build: .
     ports:
       - "3000:3000"
