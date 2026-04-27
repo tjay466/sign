@@ -1,11 +1,11 @@
 services:
-  app:
-    image: signage-app:latest
-    build: .
+  signage:
+    image: tjay466/sign:latest
+    container_name: signage_display
     ports:
       - "3000:3000"
-    environment:
-      - NODE_ENV=production
     volumes:
       - ./data:/app/data
     restart: always
+    environment:
+      - NODE_ENV=production
