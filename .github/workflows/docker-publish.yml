@@ -28,4 +28,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: tjay466/sign:latest
+          tags: vendetta6650/sign:latest
