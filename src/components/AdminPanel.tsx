@@ -3,6 +3,7 @@ import { Plus, Trash2, Save, Monitor, Settings2, Palette, XCircle, ExternalLink,
 import { Reorder } from "motion/react";
 import { SignageData, Announcement, GardenCondition } from "../types";
 import { VISUAL_TEMPLATES } from "../lib/templates";
+import ImageUpload from "./ImageUpload";
 
 interface AdminPanelProps {
   data: SignageData;
@@ -385,14 +386,21 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                                 />
                               </div>
                               <div>
-                                <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Background Media URL (Image or Video ID)</label>
-                                <input
-                                  type="text"
-                                  value={ann.mediaUrl || ""}
-                                  onChange={(e) => setAnnouncements(announcements.map(a => a.id === ann.id ? { ...a, mediaUrl: e.target.value } : a))}
-                                  className="w-full bg-slate-950 border border-white/10 px-5 py-4 text-sm text-white font-mono outline-none"
-                                  placeholder="https://... or YT_ID"
-                                />
+                                <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Background Media (Image or Video ID)</label>
+                                <div className="space-y-4">
+                                  <input
+                                    type="text"
+                                    value={ann.mediaUrl || ""}
+                                    onChange={(e) => setAnnouncements(announcements.map(a => a.id === ann.id ? { ...a, mediaUrl: e.target.value } : a))}
+                                    className="w-full bg-slate-950 border border-white/10 px-5 py-4 text-sm text-white font-mono outline-none"
+                                    placeholder="https://... or YT_ID"
+                                  />
+                                  <ImageUpload 
+                                    currentUrl={ann.mediaUrl}
+                                    onUpload={(url) => setAnnouncements(announcements.map(a => a.id === ann.id ? { ...a, mediaUrl: url } : a))}
+                                    accentColor={theme.accentColor}
+                                  />
+                                </div>
                               </div>
                               <div>
                                 <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Price Tag (Optional)</label>
@@ -432,26 +440,32 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                           {(ann.type === 'image' || ann.type === 'youtube') && (
                             <div>
                               <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">
-                                {ann.type === 'image' ? 'Hosted Image URL' : 'YouTube Video ID'}
+                                {ann.type === 'image' ? 'Image Media' : 'YouTube Video ID'}
                               </label>
-                              <div className="flex gap-4">
-                                <input
-                                  type="text"
-                                  value={ann.mediaUrl || ""}
-                                  onChange={(e) => {
-                                    const value = e.target.value;
-                                    const cleanValue = ann.type === 'youtube' ? extractYoutubeId(value) : value;
-                                    setAnnouncements(announcements.map(a => a.id === ann.id ? { ...a, mediaUrl: cleanValue } : a));
-                                  }}
-                                  className="flex-1 bg-slate-950 border border-white/10 px-5 py-4 text-sm text-slate-300 font-mono focus:border-white/40 outline-none transition-colors"
-                                  placeholder={ann.type === 'image' ? "https://..." : "Example: P9yF599p21I"}
+                              {ann.type === 'image' ? (
+                                <ImageUpload
+                                  currentUrl={ann.mediaUrl}
+                                  onUpload={(url) => setAnnouncements(announcements.map(a => a.id === ann.id ? { ...a, mediaUrl: url } : a))}
+                                  accentColor={theme.accentColor}
                                 />
-                                {ann.type === 'youtube' && (
+                              ) : (
+                                <div className="flex gap-4">
+                                  <input
+                                    type="text"
+                                    value={ann.mediaUrl || ""}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      const cleanValue = extractYoutubeId(value);
+                                      setAnnouncements(announcements.map(a => a.id === ann.id ? { ...a, mediaUrl: cleanValue } : a));
+                                    }}
+                                    className="flex-1 bg-slate-950 border border-white/10 px-5 py-4 text-sm text-slate-300 font-mono focus:border-white/40 outline-none transition-colors"
+                                    placeholder="Example: P9yF599p21I"
+                                  />
                                   <div className="px-4 py-4 bg-white/5 border border-white/5 text-[10px] items-center flex font-bold opacity-40">
                                     AUTOPLAY + MUTE
                                   </div>
-                                )}
-                              </div>
+                                </div>
+                              )}
                             </div>
                           )}
                           
@@ -556,13 +570,11 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Logo URL</label>
-                        <input
-                          type="text"
-                          value={logoUrl}
-                          onChange={(e) => setLogoUrl(e.target.value)}
-                          className="w-full bg-slate-950 border border-white/10 px-5 py-4 text-sm text-slate-300 font-mono focus:border-white/40 outline-none"
-                          placeholder="HTTPS://..."
+                        <ImageUpload 
+                          label="Logo Image" 
+                          currentUrl={logoUrl} 
+                          onUpload={setLogoUrl}
+                          accentColor={theme.accentColor}
                         />
                       </div>
                       <div>

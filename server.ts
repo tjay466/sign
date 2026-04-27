@@ -3,11 +3,13 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import multer from "multer";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const DATA_DIR = path.join(process.cwd(), "data");
+const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 
 // Ensure data directory exists
@@ -15,11 +17,46 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
+// Ensure uploads directory exists
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+// Multer storage configuration
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, UPLOADS_DIR);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, file.fieldname + "-" + uniqueSuffix + ext);
+  },
+});
+
+const upload = multer({ 
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /image\/(jpeg|jpg|png|gif|webp)/;
+    if (allowedTypes.test(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only images are allowed"));
+    }
+  }
+});
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
   app.use(express.json());
+
+  // Serve uploads directory
+  app.use("/uploads", express.static(UPLOADS_DIR));
 
   // Default state
   const defaultData = {
@@ -120,6 +157,14 @@ async function startServer() {
   // API Routes
   app.get("/api/signage", (req, res) => {
     res.json(signageData);
+  });
+
+  app.post("/api/upload", upload.single("image"), (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+    const imageUrl = `/uploads/${req.file.filename}`;
+    res.json({ url: imageUrl });
   });
 
   app.post("/api/signage", (req, res) => {
