@@ -15,5 +15,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server.ts ./
 COPY --from=builder /app/types.ts ./
 
+RUN mkdir -p /app/data
+
 EXPOSE 3000
 CMD ["npm", "start"]

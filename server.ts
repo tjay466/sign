@@ -2,9 +2,18 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const DATA_DIR = path.join(process.cwd(), "data");
+const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
+
+// Ensure data directory exists
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
 
 async function startServer() {
   const app = express();
@@ -12,8 +21,8 @@ async function startServer() {
 
   app.use(express.json());
 
-  // In-memory state for the signage
-  let signageData = {
+  // Default state
+  const defaultData = {
     storeName: "The Pond Warehouse",
     logoUrl: "https://petandpondwarehouse.com/cdn/shop/files/Logo.png?v=1748881219&width=90",
     announcements: [
@@ -35,6 +44,11 @@ async function startServer() {
       lon: -113.4909,
       enabled: true,
     },
+    musicConfig: {
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+      volume: 0.5,
+      enabled: false,
+    },
     tickerText: "Visit The Pond Warehouse for premium koi and aquatic supplies • Free water testing available in-store • Ask about our pond maintenance plans",
     theme: {
       backgroundColor: "#062021",
@@ -44,6 +58,25 @@ async function startServer() {
     },
     lastUpdated: Date.now(),
   };
+
+  // Load from file or use defaults
+  let signageData = { ...defaultData };
+  if (fs.existsSync(SETTINGS_FILE)) {
+    try {
+      const savedData = JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf-8"));
+      signageData = { ...defaultData, ...savedData };
+    } catch (e) {
+      console.error("Failed to load settings.json, using defaults", e);
+    }
+  }
+
+  function saveSettings() {
+    try {
+      fs.writeFileSync(SETTINGS_FILE, JSON.stringify(signageData, null, 2));
+    } catch (e) {
+      console.error("Failed to save settings.json", e);
+    }
+  }
 
   // Weather update logic
   async function updateWeather() {
@@ -97,6 +130,9 @@ async function startServer() {
       lastUpdated: Date.now(),
     };
     
+    // Save to file
+    saveSettings();
+
     // If weather config changed, refetch
     if (JSON.stringify(signageData.weatherConfig) !== oldConfig) {
       updateWeather();

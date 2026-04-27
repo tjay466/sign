@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import { Plus, Trash2, Save, Monitor, Settings2, Palette, XCircle, ExternalLink, Store, Thermometer, Wind, Sun, Cloud, Droplets, Leaf } from "lucide-react";
+import { Plus, Trash2, Save, Monitor, Settings2, Palette, XCircle, ExternalLink, Store, Thermometer, Wind, Sun, Cloud, Droplets, Leaf, Music, Volume2, Layout, Image as ImageIcon, Video, Type, GripVertical } from "lucide-react";
+import { Reorder } from "motion/react";
 import { SignageData, Announcement, GardenCondition } from "../types";
+import { VISUAL_TEMPLATES } from "../lib/templates";
 
 interface AdminPanelProps {
   data: SignageData;
@@ -9,7 +11,7 @@ interface AdminPanelProps {
 }
 
 export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps) {
-  const [activeTab, setActiveTab] = useState<"control" | "style" | "brand" | "weather">("control");
+  const [activeTab, setActiveTab] = useState<"control" | "style" | "brand" | "weather" | "music" | "library">("control");
   const [announcements, setAnnouncements] = useState<Announcement[]>(data.announcements);
   const [theme, setTheme] = useState(data.theme);
   const [storeName, setStoreName] = useState(data.storeName);
@@ -17,6 +19,7 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
   const [tickerText, setTickerText] = useState(data.tickerText || "");
   const [conditions, setConditions] = useState<GardenCondition[]>(data.conditions || []);
   const [weatherConfig, setWeatherConfig] = useState(data.weatherConfig);
+  const [musicConfig, setMusicConfig] = useState(data.musicConfig);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -46,9 +49,72 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
     );
   };
 
+  const handleAddTemplate = (templateId: string) => {
+    let newAnn: Announcement;
+    
+    switch(templateId) {
+      case 'spotlight':
+        newAnn = {
+          id: Math.random().toString(36).substr(2, 9),
+          type: 'template',
+          templateId: 'spotlight',
+          text: 'NEW ARRIVALS',
+          subtitle: 'PREMIUM JAPANESE KOI',
+          mediaUrl: 'https://images.unsplash.com/photo-1524147043834-0852e90f2b3b?q=80&w=2070&auto=format&fit=crop',
+          price: 'FROM $49.99',
+          cta: 'IN-STORE ONLY',
+          duration: 8000
+        };
+        break;
+      case 'modern-text':
+        newAnn = {
+          id: Math.random().toString(36).substr(2, 9),
+          type: 'template',
+          templateId: 'modern-text',
+          text: 'POND CLEANING SPECIAL',
+          subtitle: 'SCHEDULE NOW & SAVE 15%',
+          cta: 'BOOK AT FRONT DESK',
+          duration: 6000
+        };
+        break;
+      case 'split-banner':
+        newAnn = {
+          id: Math.random().toString(36).substr(2, 9),
+          type: 'template',
+          templateId: 'split-banner',
+          text: 'WATER QUALITY EXPERTS',
+          subtitle: 'Free water testing every weekend. Bring a sample in-store for a professional analysis.',
+          mediaUrl: 'https://images.unsplash.com/photo-1583212292454-1fe6229603b7?q=80&w=2074&auto=format&fit=crop',
+          cta: 'LEARN MORE',
+          duration: 10000
+        };
+        break;
+      case 'minimal-alert':
+        newAnn = {
+          id: Math.random().toString(36).substr(2, 9),
+          type: 'template',
+          templateId: 'minimal-alert',
+          text: 'WINTER HOURS',
+          subtitle: 'Starting Nov 1st: 9AM - 5PM',
+          duration: 5000
+        };
+        break;
+      default:
+        newAnn = {
+          id: Math.random().toString(36).substr(2, 9),
+          type: 'text',
+          text: 'NEW ANNOUNCEMENT',
+          duration: 5000
+        };
+    }
+    
+    setAnnouncements([...announcements, newAnn]);
+    setActiveTab("control");
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
-    await onUpdate({ announcements, theme, storeName, logoUrl, conditions, weatherConfig, tickerText });
+    await onUpdate({ announcements, theme, storeName, logoUrl, conditions, weatherConfig, tickerText, musicConfig });
     setTimeout(() => setIsSaving(false), 2000);
   };
 
@@ -127,6 +193,32 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
             Garden Stats
           </button>
           
+          <button 
+            onClick={() => setActiveTab("music")}
+            className={`flex items-center gap-3 px-5 py-4 rounded-none border-l-4 font-bold uppercase text-xs tracking-widest transition-all ${
+              activeTab === "music" 
+                ? "bg-white/5" 
+                : "text-slate-500 hover:bg-white/5 border-transparent"
+            }`}
+            style={activeTab === "music" ? { borderColor: theme.accentColor, color: theme.accentColor } : {}}
+          >
+            <Music className="w-4 h-4" />
+            Background Music
+          </button>
+
+          <button 
+            onClick={() => setActiveTab("library")}
+            className={`flex items-center gap-3 px-5 py-4 rounded-none border-l-4 font-bold uppercase text-xs tracking-widest transition-all ${
+              activeTab === "library" 
+                ? "bg-white/5" 
+                : "text-slate-500 hover:bg-white/5 border-transparent"
+            }`}
+            style={activeTab === "library" ? { borderColor: theme.accentColor, color: theme.accentColor } : {}}
+          >
+            <Layout className="w-4 h-4" />
+            Template Library
+          </button>
+          
           <div className="pt-4 mt-4 border-t border-white/5 flex flex-col gap-2">
             <button 
               onClick={onClose}
@@ -159,6 +251,8 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                 {activeTab === "control" ? "Content Loop" : 
                  activeTab === "style" ? "Store Theme" : 
                  activeTab === "brand" ? "Branding" : 
+                 activeTab === "music" ? "Background Music" :
+                 activeTab === "library" ? "Template Library" :
                  "Garden Stats"}
               </h1>
               <p className="text-slate-400 font-medium text-lg">
@@ -168,6 +262,10 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                   ? "Customize the aquatic environment and colors."
                   : activeTab === "brand"
                   ? "Set your store identity and logo."
+                  : activeTab === "music"
+                  ? "Configure the environmental soundscape."
+                  : activeTab === "library"
+                  ? "Select high-impact visual templates for your signage."
                   : "Configure automated weather and manual pond stats."}
               </p>
             </div>
@@ -198,21 +296,37 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                   {/* ... Existing Announcements Logic ... */}
                   <div className="flex justify-between items-baseline">
                     <h3 className="text-2xl font-black uppercase tracking-tight">Active Slides</h3>
-                    <button
-                      onClick={handleAddAnnouncement}
-                      className="text-xs flex items-center gap-2 hover:opacity-80 font-black uppercase tracking-widest border-b-2 border-white/10"
-                      style={{ color: theme.accentColor }}
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add Media Slide
-                    </button>
+                    <div className="flex gap-6">
+                      <button
+                        onClick={handleAddAnnouncement}
+                        className="text-xs flex items-center gap-2 hover:opacity-80 font-black uppercase tracking-widest border-b-2 border-white/10 transition-all hover:border-white/30"
+                        style={{ color: theme.accentColor }}
+                      >
+                        <Type className="w-3 h-3" />
+                        Add Text Slide
+                      </button>
+                      <button
+                        onClick={() => setActiveTab("library")}
+                        className="text-xs flex items-center gap-2 hover:opacity-80 font-black uppercase tracking-widest border-b-2 border-white/10 transition-all hover:border-white/30 text-slate-400"
+                      >
+                        <Layout className="w-3 h-3" />
+                        Browse Templates
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="space-y-6">
+                  <Reorder.Group axis="y" values={announcements} onReorder={setAnnouncements} className="space-y-6">
                     {announcements.map((ann, idx) => (
-                      <div key={ann.id} className="bg-white/5 p-8 border border-white/5 flex flex-col gap-6 group hover:border-white/10 transition-colors">
+                      <Reorder.Item 
+                        key={ann.id} 
+                        value={ann}
+                        className="bg-white/5 p-8 border border-white/5 flex flex-col gap-6 group hover:border-white/10 transition-colors relative cursor-default"
+                      >
                         <div className="flex justify-between items-center">
                           <div className="flex items-center gap-4">
+                            <div className="p-2 cursor-grab active:cursor-grabbing text-white/20 hover:text-white/40 transition-colors">
+                              <GripVertical className="w-5 h-5" />
+                            </div>
                             <span className="text-4xl font-mono text-white/10 font-black">0{idx + 1}</span>
                             <select 
                               value={ann.type}
@@ -224,6 +338,7 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                               <option value="text">Text Billboard</option>
                               <option value="image">Hero Image</option>
                               <option value="youtube">YouTube Feed</option>
+                              <option value="template">Visual Template</option>
                             </select>
                           </div>
                           <button
@@ -235,6 +350,73 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                         </div>
 
                         <div className="space-y-6">
+                          {ann.type === 'template' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div>
+                                <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Template Design</label>
+                                <select 
+                                  value={ann.templateId}
+                                  onChange={(e) => setAnnouncements(announcements.map(a => a.id === ann.id ? { ...a, templateId: e.target.value } : a))}
+                                  className="w-full bg-slate-950 border border-white/10 px-5 py-4 text-sm text-white font-bold uppercase tracking-widest outline-none"
+                                >
+                                  {VISUAL_TEMPLATES.map(t => (
+                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Main Headline</label>
+                                <input
+                                  type="text"
+                                  value={ann.text || ""}
+                                  onChange={(e) => setAnnouncements(announcements.map(a => a.id === ann.id ? { ...a, text: e.target.value.toUpperCase() } : a))}
+                                  className="w-full bg-slate-950 border border-white/10 px-5 py-4 text-sm text-white font-bold uppercase outline-none"
+                                  placeholder="HEADLINE"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Subtitle</label>
+                                <input
+                                  type="text"
+                                  value={ann.subtitle || ""}
+                                  onChange={(e) => setAnnouncements(announcements.map(a => a.id === ann.id ? { ...a, subtitle: e.target.value } : a))}
+                                  className="w-full bg-slate-950 border border-white/10 px-5 py-4 text-sm text-white outline-none"
+                                  placeholder="Sub-text content..."
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Background Media URL (Image or Video ID)</label>
+                                <input
+                                  type="text"
+                                  value={ann.mediaUrl || ""}
+                                  onChange={(e) => setAnnouncements(announcements.map(a => a.id === ann.id ? { ...a, mediaUrl: e.target.value } : a))}
+                                  className="w-full bg-slate-950 border border-white/10 px-5 py-4 text-sm text-white font-mono outline-none"
+                                  placeholder="https://... or YT_ID"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Price Tag (Optional)</label>
+                                <input
+                                  type="text"
+                                  value={ann.price || ""}
+                                  onChange={(e) => setAnnouncements(announcements.map(a => a.id === ann.id ? { ...a, price: e.target.value } : a))}
+                                  className="w-full bg-slate-950 border border-white/10 px-5 py-4 text-sm text-emerald-400 font-black outline-none"
+                                  placeholder="$00.00"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Call to Action</label>
+                                <input
+                                  type="text"
+                                  value={ann.cta || ""}
+                                  onChange={(e) => setAnnouncements(announcements.map(a => a.id === ann.id ? { ...a, cta: e.target.value.toUpperCase() } : a))}
+                                  className="w-full bg-slate-950 border border-white/10 px-5 py-4 text-sm text-white font-bold outline-none"
+                                  placeholder="SHOP NOW"
+                                />
+                              </div>
+                            </div>
+                          )}
+
                           {(ann.type === 'text' || ann.type === 'image') && (
                             <div>
                               <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Display Text Content</label>
@@ -312,10 +494,10 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                           )}
                         </div>
                       </div>
-                        </div>
-                      </div>
+                    </div>
+                      </Reorder.Item>
                     ))}
-                  </div>
+                  </Reorder.Group>
                 </div>
               ) : activeTab === "style" ? (
                 <div className="space-y-10">
@@ -393,6 +575,106 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                         />
                       </div>
                     </div>
+                  </div>
+                </div>
+              ) : activeTab === "music" ? (
+                <div className="space-y-12">
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-2xl font-black uppercase tracking-tight">Audio Settings</h3>
+                      <button 
+                        onClick={() => setMusicConfig({ ...musicConfig, enabled: !musicConfig.enabled })}
+                        className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest border transition-all ${
+                          musicConfig.enabled ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" : "bg-white/5 border-white/10 text-slate-500"
+                        }`}
+                      >
+                        {musicConfig.enabled ? "Music Is ON" : "Music Is OFF"}
+                      </button>
+                    </div>
+                    
+                    <div className="bg-white/5 p-8 border border-white/5 space-y-8">
+                      <div>
+                        <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">MP3/Audio Stream URL</label>
+                        <input
+                          type="text"
+                          value={musicConfig.url}
+                          onChange={(e) => setMusicConfig({ ...musicConfig, url: e.target.value })}
+                          className="w-full bg-slate-950 border border-white/10 px-5 py-4 text-sm text-slate-300 font-mono focus:border-white/40 outline-none transition-colors"
+                          placeholder="https://example.com/audio.mp3"
+                        />
+                        <p className="text-[10px] text-slate-500 font-bold uppercase mt-2">Requires direct link to audio file (mp3, wav, etc.)</p>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between mb-3">
+                          <label className="text-[10px] font-black opacity-30 uppercase tracking-widest block">Master Volume</label>
+                          <span className="text-[10px] font-mono text-slate-500">{Math.round(musicConfig.volume * 100)}%</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <Volume2 className="w-4 h-4 opacity-30" />
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            value={musicConfig.volume}
+                            onChange={(e) => setMusicConfig({ ...musicConfig, volume: parseFloat(e.target.value) })}
+                            className="flex-1 accent-emerald-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-emerald-500/5 border border-emerald-500/10 p-8 space-y-4">
+                      <h4 className="text-xs font-black uppercase tracking-widest text-emerald-500">How Background Music Works</h4>
+                      <p className="text-sm text-slate-400 leading-relaxed">
+                        The audio will loop continuously in the background of the signage. Note that most modern browsers require a user interaction (like a mouse click) on the page before they will allow audio to play.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : activeTab === "library" ? (
+                <div className="space-y-12">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {VISUAL_TEMPLATES.map(template => (
+                      <div key={template.id} className="bg-white/5 border border-white/5 overflow-hidden flex flex-col group hover:border-white/20 transition-all">
+                        <div className="aspect-video bg-slate-900 relative overflow-hidden">
+                           {template.previewUrl ? (
+                             <img 
+                               src={template.previewUrl} 
+                               alt={template.name}
+                               className="w-full h-full object-cover opacity-60 group-hover:scale-105 group-hover:opacity-100 transition-all duration-500"
+                               referrerPolicy="no-referrer"
+                             />
+                           ) : (
+                             <div className="absolute inset-0 flex items-center justify-center p-8">
+                               <div className="text-center space-y-2 z-10">
+                                 <div className="w-12 h-1 bg-white/10 mx-auto mb-4" />
+                                 <h4 className="text-lg font-black uppercase tracking-tighter leading-none">{template.name}</h4>
+                                 <p className="text-[8px] opacity-30 uppercase tracking-widest font-bold">Template_Structure_{template.id.toUpperCase()}</p>
+                               </div>
+                             </div>
+                           )}
+                           <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex justify-between items-end">
+                             <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Preset_ID_{template.id.toUpperCase()}</p>
+                             <Layout className="w-6 h-6 opacity-20" />
+                           </div>
+                        </div>
+                        <div className="p-8 flex-1 flex flex-col justify-between gap-6">
+                          <div>
+                            <h3 className="text-xl font-bold mb-2">{template.name}</h3>
+                            <p className="text-sm text-slate-400 leading-relaxed">{template.description}</p>
+                          </div>
+                          <button
+                            onClick={() => handleAddTemplate(template.id)}
+                            className="w-full py-4 text-slate-950 font-black uppercase text-xs tracking-widest hover:opacity-90 active:scale-95 transition-all"
+                            style={{ backgroundColor: theme.accentColor }}
+                          >
+                            Add to Signage Loop
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ) : (

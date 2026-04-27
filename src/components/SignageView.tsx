@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Clock, Sun, Cloud, Droplets, Waves, Leaf, Settings, Volume2, VolumeX, Thermometer, Wind } from "lucide-react";
+import { Clock, Sun, Cloud, Droplets, Waves, Leaf, Settings, Volume2, VolumeX, Thermometer, Wind, Music } from "lucide-react";
 import YouTube from "react-youtube";
 import { SignageData } from "../types";
 
@@ -13,6 +13,32 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [time, setTime] = useState(new Date());
   const [isMuted, setIsMuted] = useState(true);
+  const [audioError, setAudioError] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Sync background music
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = data.musicConfig.volume;
+      audioRef.current.muted = isMuted;
+      
+      if (data.musicConfig.enabled) {
+        audioRef.current.play().catch(err => {
+          console.warn("Autoplay blocked or audio error:", err);
+          setAudioError(true);
+        });
+      } else {
+        audioRef.current.pause();
+      }
+    }
+  }, [data.musicConfig.enabled, data.musicConfig.url, data.musicConfig.volume, isMuted]);
+
+  // Handle manual interaction to clear audio error/unblock
+  const handleUnblockAudio = () => {
+    if (audioRef.current && data.musicConfig.enabled) {
+      audioRef.current.play().then(() => setAudioError(false));
+    }
+  };
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -33,10 +59,8 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
     
     // For YouTube, we still use a long fallback timer (e.g. 10 mins) 
     // just in case onEnd never fires, but generally we wait for the video.
-    // If we want to strictly follow "play full video", we keep the return logic 
-    // but maybe add a reasonable maximum (like 15 mins).
     const timeoutDuration = currentAnnouncement?.type === 'youtube' 
-      ? Math.max(currentAnnouncement.duration, 600000) // Default 10 min fallback for videos
+      ? Math.max(currentAnnouncement.duration || 0, 600000) 
       : currentAnnouncement?.duration || 5000;
 
     const timer = setTimeout(() => {
@@ -44,15 +68,18 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
     }, timeoutDuration);
 
     return () => clearTimeout(timer);
-  }, [currentIndex, data.announcements]);
+    // Only re-run the timer if the index changes or the actual number of announcements changes.
+    // If the content of announcements changes but the length is same, we let the current timer finish.
+  }, [currentIndex, data.announcements.length]);
 
   const currentAnnouncement = data.announcements[currentIndex];
 
   return (
-    <div
-      className="fixed inset-0 overflow-hidden flex flex-col font-sans transition-colors duration-1000"
-      style={{ backgroundColor: data.theme.backgroundColor, color: data.theme.textColor }}
-    >
+    <>
+      <div
+        className="fixed inset-0 overflow-hidden flex flex-col font-sans transition-colors duration-1000"
+        style={{ backgroundColor: data.theme.backgroundColor, color: data.theme.textColor }}
+      >
       {/* Header Section: Brand & Time */}
       <header className="h-24 px-12 flex items-center justify-between border-b border-white/10 z-20">
         <div className="flex items-center gap-4">
@@ -197,6 +224,154 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
                       />
                     </div>
                   )}
+
+                  {currentAnnouncement.type === 'template' && (
+                    <div className="relative w-full h-full overflow-hidden flex flex-col justify-center">
+                      {currentAnnouncement.templateId === 'spotlight' && (
+                        <div className="relative h-full flex flex-col justify-end p-20 overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
+                          <img 
+                            src={currentAnnouncement.mediaUrl} 
+                            className="absolute inset-0 w-full h-full object-cover z-0" 
+                            style={{ filter: "brightness(0.6) contrast(1.2)" }}
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="relative z-10 space-y-6">
+                            <span 
+                              className="inline-block px-4 py-1 text-slate-950 font-black text-sm uppercase tracking-widest"
+                              style={{ backgroundColor: data.theme.accentColor }}
+                            >
+                              SPOTLIGHT
+                            </span>
+                            <h1 className="text-[120px] leading-[0.8] font-black uppercase tracking-tighter">
+                              {currentAnnouncement.text}
+                            </h1>
+                            <p className="text-3xl font-bold uppercase tracking-widest text-white/80">
+                              {currentAnnouncement.subtitle}
+                            </p>
+                            <div className="flex gap-8 items-center pt-8">
+                              {currentAnnouncement.price && (
+                                <div className="text-6xl font-black font-mono" style={{ color: data.theme.accentColor }}>
+                                  {currentAnnouncement.price}
+                                </div>
+                              )}
+                              {currentAnnouncement.cta && (
+                                <div className="px-8 py-4 border-2 border-white/20 text-white font-black uppercase tracking-widest">
+                                  {currentAnnouncement.cta}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {currentAnnouncement.templateId === 'modern-text' && (
+                        <div 
+                          className="h-full flex flex-col items-center justify-center p-20 text-center rounded-3xl overflow-hidden"
+                          style={{ background: `linear-gradient(135deg, ${data.theme.backgroundColor}, #000)` }}
+                        >
+                          <div className="max-w-4xl space-y-12">
+                             <div className="w-32 h-1 mx-auto" style={{ backgroundColor: data.theme.accentColor }} />
+                             <h1 className="text-8xl font-black uppercase tracking-tighter leading-none italic">
+                               {currentAnnouncement.text}
+                             </h1>
+                             <p className="text-4xl font-light tracking-[0.3em] uppercase opacity-60">
+                               {currentAnnouncement.subtitle}
+                             </p>
+                             {currentAnnouncement.cta && (
+                               <div className="pt-10">
+                                  <span 
+                                    className="px-12 py-5 text-slate-950 font-black uppercase tracking-[0.5em] text-sm"
+                                    style={{ backgroundColor: data.theme.accentColor }}
+                                  >
+                                    {currentAnnouncement.cta}
+                                  </span>
+                               </div>
+                             )}
+                          </div>
+                        </div>
+                      )}
+
+                      {currentAnnouncement.templateId === 'split-banner' && (
+                        <div className="h-full grid grid-cols-2 rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
+                           <div className="relative">
+                              <img 
+                                src={currentAnnouncement.mediaUrl} 
+                                className="absolute inset-0 w-full h-full object-cover" 
+                                referrerPolicy="no-referrer"
+                              />
+                           </div>
+                           <div className="bg-white/5 backdrop-blur-xl p-20 flex flex-col justify-center gap-8">
+                              <h2 className="text-6xl font-black uppercase tracking-tighter leading-tight">
+                                {currentAnnouncement.text}
+                              </h2>
+                              <p className="text-xl text-slate-400 leading-relaxed font-medium">
+                                {currentAnnouncement.subtitle}
+                              </p>
+                              {currentAnnouncement.cta && (
+                                <div className="pt-6">
+                                  <button 
+                                    className="px-10 py-5 text-slate-950 font-black uppercase tracking-widest text-sm"
+                                    style={{ backgroundColor: data.theme.accentColor }}
+                                  >
+                                    {currentAnnouncement.cta}
+                                  </button>
+                                </div>
+                              )}
+                           </div>
+                        </div>
+                      )}
+
+                      {currentAnnouncement.templateId === 'minimal-alert' && (
+                        <div 
+                          className="h-full flex flex-col items-center justify-center border-[20px] rounded-3xl"
+                          style={{ borderColor: data.theme.accentColor }}
+                        >
+                           <div className="text-center space-y-8 animate-pulse p-20">
+                             <h1 className="text-[120px] font-black uppercase tracking-widest leading-none" style={{ color: data.theme.accentColor }}>
+                                {currentAnnouncement.text}
+                             </h1>
+                             <div className="h-0.5 w-full bg-white/20" />
+                             <p className="text-4xl font-bold uppercase tracking-tighter">
+                                {currentAnnouncement.subtitle}
+                             </p>
+                           </div>
+                        </div>
+                      )}
+
+                      {currentAnnouncement.templateId === 'video-background' && (
+                        <div className="relative h-full w-full rounded-3xl overflow-hidden">
+                           <div className="absolute inset-0 z-0">
+                               <YouTube
+                                videoId={currentAnnouncement.mediaUrl}
+                                opts={{
+                                  height: '100%',
+                                  width: '100%',
+                                  playerVars: {
+                                    autoplay: 1,
+                                    mute: 1, 
+                                    controls: 0,
+                                    modestbranding: 1,
+                                    rel: 0,
+                                    loop: 1,
+                                    playlist: currentAnnouncement.mediaUrl, // Required for loop
+                                  },
+                                }}
+                                className="absolute inset-0 w-full h-full scale-125" // Scale up to hide edges
+                                containerClassName="w-full h-full"
+                              />
+                           </div>
+                           <div className="absolute inset-0 bg-black/40 z-10 flex flex-col items-center justify-center p-20 text-center">
+                              <h1 className="text-8xl font-black uppercase tracking-tighter mb-4 drop-shadow-2xl">
+                                {currentAnnouncement.text}
+                              </h1>
+                              <p className="text-2xl font-bold uppercase tracking-widest opacity-80" style={{ color: data.theme.accentColor }}>
+                                {currentAnnouncement.subtitle}
+                              </p>
+                           </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -263,5 +438,28 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
         </div>
       </footer>
     </div>
+    <audio 
+      ref={audioRef} 
+      src={data.musicConfig.url} 
+      loop 
+      autoPlay={data.musicConfig.enabled}
+    />
+    
+    {/* Optional Interaction Overlay for Autoplay bypass */}
+    {data.musicConfig.enabled && audioError && (
+      <div 
+        className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center cursor-pointer backdrop-blur-sm"
+        onClick={handleUnblockAudio}
+      >
+        <div className="bg-slate-900 p-8 border border-white/10 flex flex-col items-center gap-6 shadow-2xl">
+          <Music className="w-16 h-16 text-emerald-400 animate-bounce" />
+          <div className="text-center">
+            <h2 className="text-2xl font-black uppercase tracking-tight mb-2">Enable Audio</h2>
+            <p className="text-sm text-slate-400 uppercase tracking-widest font-bold">Click anywhere to start the soundscape</p>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
