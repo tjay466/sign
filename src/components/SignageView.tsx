@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Clock, Sun, Cloud, Droplets, Waves, Leaf, Settings, Volume2, VolumeX, Thermometer, Wind, Music } from "lucide-react";
+import { Clock, Sun, Cloud, Droplets, Waves, Leaf, Settings, Volume2, VolumeX, Thermometer, Wind, Music, CloudRain, CloudSnow, CloudLightning } from "lucide-react";
 import YouTube from "react-youtube";
 import { SignageData } from "../types";
 
@@ -47,38 +47,73 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
 
   useEffect(() => {
     // Reset index if it gets out of bounds (e.g. after removing items)
-    if (currentIndex >= data.announcements.length) {
+    const hasLegacyForecastSlide = data.weatherConfig.showAsSlide && data.forecast?.length > 0;
+    const effectiveSlidesCount = data.announcements.length + (hasLegacyForecastSlide ? 1 : 0);
+    if (currentIndex >= effectiveSlidesCount && effectiveSlidesCount > 0) {
       setCurrentIndex(0);
     }
-  }, [data.announcements, currentIndex]);
+  }, [data.announcements, data.weatherConfig.showAsSlide, data.forecast, currentIndex]);
 
   useEffect(() => {
-    if (!data.announcements.length || currentIndex >= data.announcements.length) return;
-
-    const currentAnnouncement = data.announcements[currentIndex];
+    const hasLegacyForecastSlide = data.weatherConfig.showAsSlide && data.forecast?.length > 0;
+    const effectiveSlidesCount = data.announcements.length + (hasLegacyForecastSlide ? 1 : 0);
     
-    // For YouTube, we still use a long fallback timer (e.g. 10 mins) 
-    // just in case onEnd never fires, but generally we wait for the video.
-    const timeoutDuration = currentAnnouncement?.type === 'youtube' 
-      ? Math.max(currentAnnouncement.duration || 0, 600000) 
-      : currentAnnouncement?.duration || 5000;
+    if (effectiveSlidesCount === 0 || currentIndex >= effectiveSlidesCount) return;
+
+    let timeoutDuration = 5000;
+    
+    if (hasLegacyForecastSlide && currentIndex === data.announcements.length) {
+      // Legacy Forecast slide duration
+      timeoutDuration = 10000; 
+    } else {
+      const currentAnnouncement = data.announcements[currentIndex];
+      if (currentAnnouncement?.type === 'weather') {
+        timeoutDuration = currentAnnouncement.duration || 10000;
+      } else {
+        timeoutDuration = currentAnnouncement?.type === 'youtube' 
+          ? Math.max(currentAnnouncement.duration || 0, 600000) 
+          : currentAnnouncement?.duration || 5000;
+      }
+    }
 
     const timer = setTimeout(() => {
-      setCurrentIndex((prev) => (prev + 1) % data.announcements.length);
+      setCurrentIndex((prev) => (prev + 1) % effectiveSlidesCount);
     }, timeoutDuration);
 
     return () => clearTimeout(timer);
-    // Only re-run the timer if the index changes or the actual number of announcements changes.
-    // If the content of announcements changes but the length is same, we let the current timer finish.
-  }, [currentIndex, data.announcements.length]);
+  }, [currentIndex, data.announcements.length, data.weatherConfig.showAsSlide, data.forecast?.length]);
 
-  const currentAnnouncement = data.announcements[currentIndex];
+  const isLegacyForecastSlide = data.weatherConfig.showAsSlide && data.forecast?.length > 0 && currentIndex === data.announcements.length;
+  const currentAnnouncement = isLegacyForecastSlide ? null : data.announcements[currentIndex];
+  const isExplicitForecastSlide = currentAnnouncement?.type === 'weather';
+  const showForecastUI = isLegacyForecastSlide || isExplicitForecastSlide;
+
+  const daysToShow = isLegacyForecastSlide ? data.weatherConfig.forecastDays : (currentAnnouncement?.forecastDays || 7);
+  const slicedForecast = data.forecast?.slice(0, daysToShow) || [];
+
+  const getWeatherIcon = (code: string) => {
+    const c = parseInt(code);
+    // WMO Weather interpretation codes (WW)
+    if (c === 0) return Sun; // Clear sky
+    if (c >= 1 && c <= 3) return Cloud; // Mainly clear, partly cloudy, and overcast
+    if (c === 45 || c === 48) return Wind; // Fog and depositing rime fog (using Wind as placeholder for mist/fog)
+    if (c >= 51 && c <= 67) return CloudRain; // Drizzle/Rain (slight, moderate, heavy)
+    if (c >= 71 && c <= 77) return CloudSnow; // Snow fall/grains
+    if (c >= 80 && c <= 82) return CloudRain; // Rain showers
+    if (c >= 85 && c <= 86) return CloudSnow; // Snow showers
+    if (c >= 95 && c <= 99) return CloudLightning; // Thunderstorm
+    return Cloud;
+  };
 
   return (
     <>
       <div
         className="fixed inset-0 overflow-hidden flex flex-col font-sans transition-colors duration-1000"
-        style={{ backgroundColor: data.theme.backgroundColor, color: data.theme.textColor }}
+        style={{ 
+          backgroundColor: data.theme.backgroundColor, 
+          color: data.theme.textColor,
+          padding: data.theme.safeAreaPadding || "0px"
+        }}
       >
       {/* Header Section: Brand & Time */}
       <header className="h-24 px-12 flex items-center justify-between border-b border-white/10 z-20">
@@ -146,7 +181,53 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
           
           <div className="relative z-10 h-full flex flex-col justify-center">
             <AnimatePresence mode="wait">
-              {currentAnnouncement && (
+              {showForecastUI ? (
+                <motion.div
+                  key={isLegacyForecastSlide ? "forecast-legacy" : `forecast-${currentAnnouncement?.id}`}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.05 }}
+                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                  className="h-full flex flex-col justify-center"
+                >
+                  <div className="flex flex-col">
+                    <span 
+                      className="inline-block px-4 py-1 text-slate-950 font-bold text-sm uppercase mb-8 tracking-widest rounded-sm w-fit"
+                      style={{ backgroundColor: data.theme.accentColor }}
+                    >
+                      {currentAnnouncement?.text || "Weekly Forecast"}
+                    </span>
+                    <h1 className="text-8xl font-black uppercase mb-12 tracking-tighter">
+                      Coming Days in {data.weatherConfig.city}
+                    </h1>
+                    
+                    <div className={`grid gap-6 ${
+                      slicedForecast.length === 7 
+                        ? 'grid-cols-4 lg:grid-cols-7' 
+                        : slicedForecast.length <= 3 
+                          ? 'grid-cols-3' 
+                          : 'grid-cols-4'
+                    }`}>
+                       {slicedForecast.map((day, i) => {
+                          const [y, m, d] = day.date.split('-').map(Number);
+                          const fDate = new Date(y, m - 1, d);
+                          const Icon = getWeatherIcon(day.condition);
+                          return (
+                             <div key={i} className="bg-white/5 border border-white/10 p-6 lg:p-10 flex flex-col items-center text-center gap-4 lg:gap-6 rounded-2xl backdrop-blur-md">
+                                <span className="text-sm lg:text-xl font-black uppercase opacity-40 tracking-[0.2em]">
+                                   {fDate.toLocaleDateString('en-US', { weekday: i === 0 && slicedForecast.length <= 3 ? 'long' : 'short' })}
+                                </span>
+                                <Icon className="w-12 h-12 lg:w-24 h-24" style={{ color: data.theme.accentColor }} />
+                                <div className="text-3xl lg:text-6xl font-black tracking-tighter">
+                                   {day.maxTemp}° <span className="opacity-30 text-xl lg:text-4xl">/ {day.minTemp}°</span>
+                                </div>
+                             </div>
+                          )
+                       })}
+                    </div>
+                  </div>
+                </motion.div>
+              ) : currentAnnouncement && (
                 <motion.div
                   key={currentAnnouncement.id}
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -217,7 +298,9 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
                           event.target.playVideo();
                         }}
                         onEnd={() => {
-                          setCurrentIndex((prev) => (prev + 1) % data.announcements.length);
+                          const hasLegacyForecastSlide = data.weatherConfig.showAsSlide && data.forecast?.length > 0;
+                          const effectiveSlidesCount = data.announcements.length + (hasLegacyForecastSlide ? 1 : 0);
+                          setCurrentIndex((prev) => (prev + 1) % effectiveSlidesCount);
                         }}
                         className="absolute inset-0 w-full h-full"
                         containerClassName="w-full h-full"
@@ -379,41 +462,54 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
         </section>
 
         {/* Right Column: Information/Secondary section */}
-        <section className="w-[35%] flex flex-col bg-white/5 backdrop-blur-sm">
+        <section className="w-[35%] flex flex-col bg-white/5 backdrop-blur-sm overflow-hidden">
           <div 
-            className="flex-1 p-12 cursor-pointer hover:bg-white/[0.02] transition-colors group"
+            className="flex-1 p-12 cursor-pointer hover:bg-white/[0.02] transition-colors group overflow-y-auto"
             onClick={onOpenSettings}
           >
             <div className="flex justify-between items-center mb-10">
-              <h2 className="text-xs font-bold opacity-40 uppercase tracking-[0.3em]">Garden Conditions</h2>
+              <h2 className="text-xs font-bold opacity-40 uppercase tracking-[0.3em]">{data.weatherConfig.city} Air & Water </h2>
               <Settings className="w-4 h-4 opacity-0 group-hover:opacity-40 transition-opacity" />
             </div>
-            <div className="space-y-8">
-              {data.conditions.map((condition) => {
-                const IconComponent = {
-                  Sun,
-                  Cloud,
-                  Droplets,
-                  Thermometer,
-                  Wind,
-                  Leaf // Fallback
-                }[condition.icon] || Droplets;
+            {data.weatherConfig.enabled ? (
+              <div className="space-y-8">
+                {data.conditions.map((condition) => {
+                  const icons: Record<string, any> = {
+                    Sun,
+                    Cloud,
+                    Droplets,
+                    Thermometer,
+                    Wind,
+                    Leaf // Fallback
+                  };
+                  const IconComponent = icons[condition.icon] || Droplets;
 
-                return (
-                  <div key={condition.id} className="flex items-center gap-6 opacity-80 group/cond">
-                    <IconComponent className="w-6 h-6 transition-transform group-hover/cond:scale-110" style={{ color: data.theme.accentColor }} />
-                    <span className="text-xl font-medium tracking-tight truncate">{condition.label}: {condition.value}</span>
-                  </div>
-                );
-              })}
-              <div className="flex items-center gap-4 opacity-80 pt-4">
-                <div 
-                  className="w-2 h-2 rounded-full animate-pulse" 
-                  style={{ backgroundColor: data.theme.accentColor }}
-                />
-                <span className="text-sm font-mono uppercase tracking-widest opacity-50">Systems Operational</span>
+                  return (
+                    <div 
+                      key={condition.id} 
+                      id={`condition-row-${condition.id}`}
+                      className="flex items-center gap-6 opacity-80 group/cond px-4 py-2 rounded-xl transition-all hover:bg-white/5"
+                    >
+                      <IconComponent 
+                        className="w-6 h-6 transition-transform group-hover/cond:scale-110" 
+                        style={{ color: data.theme.accentColor }} 
+                      />
+                      <span 
+                        id={`condition-value-${condition.id}`}
+                        className="text-xl font-medium tracking-tight truncate"
+                      >
+                        {condition.label}: {condition.value}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center p-12 opacity-20 text-center">
+                <Thermometer className="w-12 h-12 mb-4" />
+                <p className="text-[10px] font-black uppercase tracking-widest">Weather Feed Disabled</p>
+              </div>
+            )}
           </div>
 
         </section>
@@ -432,9 +528,6 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
           >
             {data.tickerText || data.announcements.map(a => a.text).join(" • ")}
           </motion.div>
-        </div>
-        <div className="flex gap-6 items-center ml-8">
-          <span className="opacity-60 font-mono text-xs border-l border-slate-950/20 pl-6 uppercase">STORE_ID: POND-44</span>
         </div>
       </footer>
     </div>

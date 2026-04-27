@@ -1,4 +1,4 @@
-export type AnnouncementType = "text" | "image" | "youtube" | "template";
+export type AnnouncementType = "text" | "image" | "youtube" | "template" | "weather";
 
 export interface Announcement {
   id: string;
@@ -10,6 +10,7 @@ export interface Announcement {
   templateId?: string;
   cta?: string;
   price?: string;
+  forecastDays?: 3 | 7;
 }
 
 export interface ThemeConfig {
@@ -17,6 +18,7 @@ export interface ThemeConfig {
   accentColor: string;
   textColor: string;
   fontFamily: string;
+  safeAreaPadding?: string; // e.g. "5%" or "20px"
 }
 
 export interface GardenCondition {
@@ -31,6 +33,16 @@ export interface WeatherConfig {
   lat: number;
   lon: number;
   enabled: boolean;
+  forecastDays: 1 | 3 | 7;
+  units: 'metric' | 'imperial';
+  showAsSlide: boolean;
+}
+
+export interface ForecastDay {
+  date: string;
+  maxTemp: number;
+  minTemp: number;
+  condition: string;
 }
 
 export interface MusicConfig {
@@ -45,6 +57,7 @@ export interface SignageData {
   announcements: Announcement[];
   conditions: GardenCondition[];
   weatherConfig: WeatherConfig;
+  forecast: ForecastDay[];
   musicConfig: MusicConfig;
   tickerText?: string;
   theme: ThemeConfig;

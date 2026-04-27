@@ -191,7 +191,7 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
             style={activeTab === "weather" ? { borderColor: theme.accentColor, color: theme.accentColor } : {}}
           >
             <Thermometer className="w-4 h-4" />
-            Garden Stats
+            Weather & Stats
           </button>
           
           <button 
@@ -254,7 +254,7 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                  activeTab === "brand" ? "Branding" : 
                  activeTab === "music" ? "Background Music" :
                  activeTab === "library" ? "Template Library" :
-                 "Garden Stats"}
+                 "Weather & Stats"}
               </h1>
               <p className="text-slate-400 font-medium text-lg">
                 {activeTab === "control" 
@@ -267,7 +267,7 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                   ? "Configure the environmental soundscape."
                   : activeTab === "library"
                   ? "Select high-impact visual templates for your signage."
-                  : "Configure automated weather and manual pond stats."}
+                  : "Configure automated high-accuracy weather and manual stats."}
               </p>
             </div>
             <button
@@ -307,6 +307,23 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                         Add Text Slide
                       </button>
                       <button
+                        onClick={() => {
+                          const newAnn = {
+                            id: Math.random().toString(36).substr(2, 9),
+                            type: 'weather' as const,
+                            text: 'WEEKLY FORECAST',
+                            duration: 10000,
+                            forecastDays: 7 as const
+                          };
+                          setAnnouncements([...announcements, newAnn]);
+                        }}
+                        className="text-xs flex items-center gap-2 hover:opacity-80 font-black uppercase tracking-widest border-b-2 border-white/10 transition-all hover:border-white/30"
+                        style={{ color: theme.accentColor }}
+                      >
+                        <Thermometer className="w-3 h-3" />
+                        Add Weather Slide
+                      </button>
+                      <button
                         onClick={() => setActiveTab("library")}
                         className="text-xs flex items-center gap-2 hover:opacity-80 font-black uppercase tracking-widest border-b-2 border-white/10 transition-all hover:border-white/30 text-slate-400"
                       >
@@ -340,6 +357,7 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                               <option value="image">Hero Image</option>
                               <option value="youtube">YouTube Feed</option>
                               <option value="template">Visual Template</option>
+                              <option value="weather">Weather Forecast</option>
                             </select>
                           </div>
                           <button
@@ -425,15 +443,38 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                             </div>
                           )}
 
-                          {(ann.type === 'text' || ann.type === 'image') && (
-                            <div>
-                              <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Display Text Content</label>
-                              <textarea
-                                value={ann.text || ""}
-                                onChange={(e) => handleAnnouncementChange(ann.id, e.target.value)}
-                                className="w-full text-2xl font-bold text-white border-none focus:ring-0 p-0 resize-none h-auto min-h-[40px] bg-transparent uppercase tracking-tight"
-                                placeholder="TYPE MESSAGE HERE..."
-                              />
+                          {(ann.type === 'text' || ann.type === 'image' || ann.type === 'weather') && (
+                            <div className="space-y-6">
+                              <div>
+                                <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Display Text Content</label>
+                                <textarea
+                                  value={ann.text || ""}
+                                  onChange={(e) => handleAnnouncementChange(ann.id, e.target.value)}
+                                  className="w-full text-2xl font-bold text-white border-none focus:ring-0 p-0 resize-none h-auto min-h-[40px] bg-transparent uppercase tracking-tight"
+                                  placeholder="TYPE MESSAGE HERE..."
+                                />
+                              </div>
+                              
+                              {ann.type === 'weather' && (
+                                <div className="pt-4 border-t border-white/5">
+                                  <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Forecast Range</label>
+                                  <div className="flex gap-2">
+                                    {[3, 7].map(days => (
+                                      <button
+                                        key={days}
+                                        onClick={() => setAnnouncements(announcements.map(a => a.id === ann.id ? { ...a, forecastDays: days as 3|7 } : a))}
+                                        className={`flex-1 px-4 py-3 text-[10px] font-black uppercase tracking-widest border transition-all ${
+                                          (ann.forecastDays || 7) === days 
+                                            ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400" 
+                                            : "bg-white/5 border-white/10 text-slate-400"
+                                        }`}
+                                      >
+                                        {days} Day Forecast
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
 
@@ -550,6 +591,82 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                             {theme.accentColor}
                           </div>
                         </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-white/5">
+                      <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">TV Safe Area Padding (Overscan Compensation)</label>
+                      <div className="flex items-center gap-4">
+                        <input
+                          type="text"
+                          value={theme.safeAreaPadding || ""}
+                          onChange={(e) => setTheme({ ...theme, safeAreaPadding: e.target.value })}
+                          className="flex-1 bg-slate-950 border border-white/10 px-5 py-4 text-sm text-white font-mono outline-none focus:border-white/40"
+                          placeholder="e.g. 3% or 40px"
+                        />
+                        <div className="flex gap-2">
+                           {["0%", "2%", "4%", "6%"].map(p => (
+                             <button
+                               key={p}
+                               onClick={() => setTheme({ ...theme, safeAreaPadding: p })}
+                               className={`px-3 py-2 text-[10px] font-black uppercase tracking-widest border ${theme.safeAreaPadding === p ? "bg-white/10 border-white/20" : "bg-black/20 border-white/5 hover:border-white/10"}`}
+                             >
+                               {p}
+                             </button>
+                           ))}
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase mt-3">
+                        Use this if the edges of the signage are cut off on your TV screen.
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Display Mode</label>
+                      <button
+                        onClick={() => setWeatherConfig({ ...weatherConfig, showAsSlide: !weatherConfig.showAsSlide })}
+                        className={`w-full px-5 py-4 text-[10px] font-black uppercase tracking-widest border transition-all ${
+                          weatherConfig.showAsSlide 
+                            ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400" 
+                            : "bg-white/5 border-white/10 text-slate-400"
+                        }`}
+                      >
+                        {weatherConfig.showAsSlide ? "Showing as Main Slide" : "Show in Sidebar Only"}
+                      </button>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Weather Units</label>
+                      <div className="flex gap-2">
+                        {['metric', 'imperial'].map(u => (
+                          <button
+                            key={u}
+                            onClick={() => setWeatherConfig({ ...weatherConfig, units: u as 'metric' | 'imperial' })}
+                            className={`flex-1 px-4 py-3 text-[10px] font-black uppercase tracking-widest border transition-all ${
+                              weatherConfig.units === u 
+                                ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]" 
+                                : "bg-white/5 border-white/5 text-slate-400 hover:border-white/10"
+                            }`}
+                          >
+                            {u === 'metric' ? 'Metric (°C, km/h)' : 'Imperial (°F, mph)'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Forecast Mode</label>
+                      <div className="flex gap-2">
+                        {[1, 3, 7].map(days => (
+                          <button
+                            key={days}
+                            onClick={() => setWeatherConfig({ ...weatherConfig, forecastDays: days as 1|3|7 })}
+                            className={`flex-1 px-4 py-3 text-[10px] font-black uppercase tracking-widest border transition-all ${
+                              weatherConfig.forecastDays === days 
+                                ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]" 
+                                : "bg-white/5 border-white/5 text-slate-400 hover:border-white/10"
+                            }`}
+                          >
+                            {days === 1 ? 'Current Only' : `${days} Day Forecast`}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -693,46 +810,87 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                 <div className="space-y-12">
                   <div className="space-y-6">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-2xl font-black uppercase tracking-tight">Automated Weather</h3>
-                      <button 
-                        onClick={() => setWeatherConfig({ ...weatherConfig, enabled: !weatherConfig.enabled })}
-                        className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest border transition-all ${
-                          weatherConfig.enabled ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" : "bg-white/5 border-white/10 text-slate-500"
-                        }`}
-                      >
-                        {weatherConfig.enabled ? "Live Weather ON" : "Live Weather OFF"}
-                      </button>
+                      <h3 className="text-2xl font-black uppercase tracking-tight">Weather Configuration</h3>
+                      <div className="flex gap-4">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest self-center">High-Accuracy Canadian Weather Feed</span>
+                        <button 
+                          onClick={() => setWeatherConfig({ ...weatherConfig, enabled: !weatherConfig.enabled })}
+                          className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest border transition-all ${
+                            weatherConfig.enabled ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" : "bg-white/5 border-white/10 text-slate-500"
+                          }`}
+                        >
+                          {weatherConfig.enabled ? "Weather Feed ON" : "Weather Feed OFF"}
+                        </button>
+                      </div>
                     </div>
                     
-                    <div className="bg-white/5 p-8 border border-white/5 grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div>
-                        <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">City Name</label>
-                        <input
-                          type="text"
-                          value={weatherConfig.city}
-                          onChange={(e) => setWeatherConfig({ ...weatherConfig, city: e.target.value })}
-                          className="w-full bg-slate-950 border border-white/10 px-4 py-3 text-sm text-white font-bold uppercase outline-none"
-                        />
+                    <div className="space-y-6">
+                      <div className="space-y-4">
+                        <label className="text-[10px] font-black opacity-30 uppercase tracking-widest block">City Search</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            id="city-search-input"
+                            placeholder="Enter city name..."
+                            className="flex-1 bg-slate-950 border border-white/10 px-5 py-4 text-sm text-white font-mono outline-none focus:border-white/40"
+                          />
+                          <button
+                            onClick={async () => {
+                              const input = document.getElementById('city-search-input') as HTMLInputElement;
+                              if (!input.value) return;
+                              try {
+                                const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(input.value)}&count=1&language=en&format=json`);
+                                const data = await res.json();
+                                if (data.results && data.results[0]) {
+                                  const result = data.results[0];
+                                  setWeatherConfig({
+                                    ...weatherConfig,
+                                    city: result.name,
+                                    lat: result.latitude,
+                                    lon: result.longitude
+                                  });
+                                }
+                              } catch (e) {
+                                console.error("City search failed", e);
+                              }
+                            }}
+                            className="px-6 bg-white/10 border border-white/10 hover:bg-white/20 text-[10px] font-black uppercase tracking-widest transition-all"
+                          >
+                            Set Location
+                          </button>
+                        </div>
                       </div>
-                      <div>
-                        <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Latitude</label>
-                        <input
-                          type="number"
-                          step="0.0001"
-                          value={weatherConfig.lat}
-                          onChange={(e) => setWeatherConfig({ ...weatherConfig, lat: parseFloat(e.target.value) })}
-                          className="w-full bg-slate-950 border border-white/10 px-4 py-3 text-sm text-white font-mono outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Longitude</label>
-                        <input
-                          type="number"
-                          step="0.0001"
-                          value={weatherConfig.lon}
-                          onChange={(e) => setWeatherConfig({ ...weatherConfig, lon: parseFloat(e.target.value) })}
-                          className="w-full bg-slate-950 border border-white/10 px-4 py-3 text-sm text-white font-mono outline-none"
-                        />
+
+                      <div className="bg-white/5 p-8 border border-white/5 grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                          <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">City Display Name</label>
+                          <input
+                            type="text"
+                            value={weatherConfig.city}
+                            onChange={(e) => setWeatherConfig({ ...weatherConfig, city: e.target.value })}
+                            className="w-full bg-slate-950 border border-white/10 px-4 py-3 text-sm text-white font-bold uppercase outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Latitude</label>
+                          <input
+                            type="number"
+                            step="0.0001"
+                            value={weatherConfig.lat}
+                            onChange={(e) => setWeatherConfig({ ...weatherConfig, lat: parseFloat(e.target.value) })}
+                            className="w-full bg-slate-950 border border-white/10 px-4 py-3 text-sm text-white font-mono outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">Longitude</label>
+                          <input
+                            type="number"
+                            step="0.0001"
+                            value={weatherConfig.lon}
+                            onChange={(e) => setWeatherConfig({ ...weatherConfig, lon: parseFloat(e.target.value) })}
+                            className="w-full bg-slate-950 border border-white/10 px-4 py-3 text-sm text-white font-mono outline-none"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
