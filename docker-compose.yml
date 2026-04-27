@@ -1,6 +1,6 @@
 services:
   signage:
-    image: vendetta6650/sign:latest
+    image: ghcr.io/vendetta6650/sign:latest
     container_name: signage_display
     ports:
       - "3000:3000"
