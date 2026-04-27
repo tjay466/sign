@@ -112,11 +112,15 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
         style={{ 
           backgroundColor: data.theme.backgroundColor, 
           color: data.theme.textColor,
-          padding: data.theme.safeAreaPadding || "0px"
+          // Default to 2.5% padding to account for TV overscan (cutting off edges)
+          padding: data.theme.safeAreaPadding && data.theme.safeAreaPadding !== "0px" 
+            ? data.theme.safeAreaPadding 
+            : "2.5%"
         }}
       >
-      {/* Header Section: Brand & Time */}
-      <header className="h-12 px-8 flex items-center justify-between border-b border-white/10 z-20">
+        <div className="flex-1 flex flex-col bg-black/20 rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative">
+          {/* Header Section: Brand & Time */}
+          <header className="h-12 px-8 flex items-center justify-between border-b border-white/10 z-20 bg-black/10">
         <div className="flex items-center gap-3">
           {data.logoUrl ? (
             <img src={data.logoUrl} alt={data.storeName} className="h-8 w-auto object-contain" referrerPolicy="no-referrer" />
@@ -500,6 +504,7 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
           </motion.div>
         </div>
       </footer>
+      </div>
     </div>
     <audio 
       ref={audioRef} 
