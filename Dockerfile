@@ -9,6 +9,7 @@ RUN npm run build
 # Stage 2: Production runtime
 FROM node:22-slim
 WORKDIR /app
+ENV NODE_ENV=production
 COPY --from=builder /app /app
 RUN mkdir -p /app/data
 EXPOSE 3000
