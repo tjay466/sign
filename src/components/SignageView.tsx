@@ -112,37 +112,37 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
         style={{ 
           backgroundColor: data.theme.backgroundColor, 
           color: data.theme.textColor,
-          // Default to 2.5% padding to account for TV overscan (cutting off edges)
+          // Default to 3% padding to account for TV overscan (cutting off edges)
           padding: data.theme.safeAreaPadding && data.theme.safeAreaPadding !== "0px" 
             ? data.theme.safeAreaPadding 
-            : "2.5%"
+            : "3%"
         }}
       >
         <div className="flex-1 flex flex-col bg-black/20 rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative">
           {/* Header Section: Brand & Time */}
-          <header className="h-12 px-8 flex items-center justify-between border-b border-white/10 z-20 bg-black/10">
-        <div className="flex items-center gap-3">
+          <header className="h-16 px-8 flex items-center justify-between border-b border-white/10 z-20 bg-black/10">
+        <div className="flex items-center gap-4">
           {data.logoUrl ? (
-            <img src={data.logoUrl} alt={data.storeName} className="h-8 w-auto object-contain" referrerPolicy="no-referrer" />
+            <img src={data.logoUrl} alt={data.storeName} className="h-10 w-auto object-contain" referrerPolicy="no-referrer" />
           ) : (
-            <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-teal-500/20 backdrop-blur-sm border border-teal-500/30">
-              <Waves className="w-5 h-5 text-teal-400" />
+            <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-teal-500/20 backdrop-blur-sm border border-teal-500/30">
+              <Waves className="w-6 h-6 text-teal-400" />
             </div>
           )}
-          <span className="text-xl font-black tracking-tighter uppercase ml-1">
+          <span className="text-2xl font-black tracking-tighter uppercase ml-2">
             {data.storeName.split(" ").map((word, i) => (
-              <span key={i} className={i === data.storeName.split(" ").length - 1 ? "" : "mr-1.5"} style={i === data.storeName.split(" ").length - 1 ? { color: data.theme.accentColor } : {}}>
+              <span key={i} className={i === data.storeName.split(" ").length - 1 ? "" : "mr-2"} style={i === data.storeName.split(" ").length - 1 ? { color: data.theme.accentColor } : {}}>
                 {word}
               </span>
             ))}
           </span>
         </div>
-        <div className="text-right flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="text-sm font-light opacity-60 uppercase tracking-[0.2em]">
+        <div className="text-right flex items-center gap-6">
+          <div className="flex items-center gap-4">
+            <div className="text-lg font-light opacity-60 uppercase tracking-[0.2em]">
               {time.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}
             </div>
-            <div className="text-sm font-mono opacity-80" style={{ color: data.theme.accentColor }}>
+            <div className="text-lg font-mono opacity-80" style={{ color: data.theme.accentColor }}>
               {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </div>
           </div>
@@ -196,16 +196,16 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
                 >
                   <div className="flex flex-col h-full justify-center">
                     <span 
-                      className="inline-block px-2 py-0.5 text-slate-950 font-bold text-[9px] uppercase mb-2 tracking-widest rounded-sm w-fit"
+                      className="inline-block px-4 py-1 text-slate-950 font-bold text-sm lg:text-base uppercase mb-4 tracking-widest rounded-sm w-fit"
                       style={{ backgroundColor: data.theme.accentColor }}
                     >
                       {currentAnnouncement?.text || "Weekly Forecast"}
                     </span>
-                    <h1 className="text-3xl lg:text-4xl font-black uppercase mb-4 tracking-tighter">
+                    <h1 className="text-5xl lg:text-7xl font-black uppercase mb-8 tracking-tighter leading-none">
                       Coming Days in {data.weatherConfig.city}
                     </h1>
                     
-                    <div className={`grid gap-3 lg:gap-4 flex-1 items-center ${
+                    <div className={`grid gap-4 lg:gap-6 flex-1 items-center ${
                       slicedForecast.length >= 7 
                         ? 'grid-cols-4 lg:grid-cols-7' 
                         : slicedForecast.length <= 3 
@@ -217,13 +217,13 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
                           const fDate = new Date(y, m - 1, d);
                           const Icon = getWeatherIcon(day.condition);
                           return (
-                             <div key={i} className="bg-white/5 border border-white/10 p-3 lg:p-4 flex flex-col items-center text-center gap-1.5 lg:gap-2 rounded-xl backdrop-blur-md">
-                                <span className="text-[9px] lg:text-[10px] font-black uppercase opacity-40 tracking-[0.2em]">
+                             <div key={i} className="bg-white/5 border border-white/10 p-4 lg:p-6 flex flex-col items-center text-center gap-3 lg:gap-4 rounded-xl backdrop-blur-md">
+                                <span className="text-xs lg:text-sm font-black uppercase opacity-40 tracking-[0.2em]">
                                    {fDate.toLocaleDateString('en-US', { weekday: i === 0 && slicedForecast.length <= 3 ? 'long' : 'short' })}
                                 </span>
-                                <Icon className="w-6 h-6 lg:w-10 h-10" style={{ color: data.theme.accentColor }} />
-                                <div className="text-lg lg:text-2xl font-black tracking-tighter">
-                                   {day.maxTemp}° <span className="opacity-30 text-[10px] lg:text-sm">/ {day.minTemp}°</span>
+                                <Icon className="w-8 h-8 lg:w-14 h-14" style={{ color: data.theme.accentColor }} />
+                                <div className="text-xl lg:text-3xl font-black tracking-tighter">
+                                   {day.maxTemp}° <span className="opacity-30 text-sm lg:text-base">/ {day.minTemp}°</span>
                                 </div>
                              </div>
                           )
@@ -241,14 +241,14 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
                   className="h-full flex flex-col justify-center"
                 >
                   {currentAnnouncement.type === 'text' && (
-                    <div className="flex flex-col justify-center px-4">
+                    <div className="flex flex-col justify-center px-8">
                       <span 
-                        className="inline-block px-2 py-0.5 text-slate-950 font-bold text-[9px] uppercase mb-3 tracking-widest rounded-sm w-fit"
+                        className="inline-block px-4 py-1 text-slate-950 font-bold text-sm lg:text-base uppercase mb-6 tracking-widest rounded-sm w-fit"
                         style={{ backgroundColor: data.theme.accentColor }}
                       >
                         Featured Today
                       </span>
-                      <h1 className="text-3xl lg:text-5xl font-black uppercase mb-4 tracking-tighter drop-shadow-2xl">
+                      <h1 className="text-6xl lg:text-9xl font-black uppercase mb-8 tracking-tighter drop-shadow-2xl leading-[0.9]">
                         {currentAnnouncement.text}
                       </h1>
                     </div>
@@ -438,15 +438,15 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
         {/* Right Column: Information/Secondary section */}
         <section className="w-[28%] flex flex-col bg-white/5 backdrop-blur-sm overflow-hidden">
           <div 
-            className="flex-1 p-4 lg:p-6 cursor-pointer hover:bg-white/[0.02] transition-colors group overflow-y-auto"
+            className="flex-1 p-6 lg:p-10 cursor-pointer hover:bg-white/[0.02] transition-colors group overflow-y-auto"
             onClick={onOpenSettings}
           >
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-[9px] font-bold opacity-40 uppercase tracking-[0.3em]">{data.weatherConfig.city} Air & Water </h2>
-              <Settings className="w-3 h-3 opacity-0 group-hover:opacity-40 transition-opacity" />
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xs lg:text-sm font-bold opacity-40 uppercase tracking-[0.3em]">{data.weatherConfig.city} Air & Water </h2>
+              <Settings className="w-4 h-4 opacity-0 group-hover:opacity-40 transition-opacity" />
             </div>
             {data.weatherConfig.enabled ? (
-              <div className="space-y-2 lg:space-y-4">
+              <div className="space-y-4 lg:space-y-6">
                 {data.conditions.map((condition) => {
                   const icons: Record<string, any> = {
                     Sun,
@@ -457,20 +457,20 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
                     Leaf // Fallback
                   };
                   const IconComponent = icons[condition.icon] || Droplets;
-
+ 
                   return (
                     <div 
                       key={condition.id} 
                       id={`condition-row-${condition.id}`}
-                      className="flex items-center gap-3 opacity-80 group/cond px-2 py-1 rounded-lg transition-all hover:bg-white/5"
+                      className="flex items-center gap-4 opacity-80 group/cond px-3 py-2 rounded-lg transition-all hover:bg-white/5"
                     >
                       <IconComponent 
-                        className="w-4 h-4 flex-shrink-0" 
+                        className="w-5 h-5 flex-shrink-0" 
                         style={{ color: data.theme.accentColor }} 
                       />
                       <span 
                         id={`condition-value-${condition.id}`}
-                        className="text-xs lg:text-sm font-medium tracking-tight truncate flex-1 min-w-0"
+                        className="text-sm lg:text-lg font-medium tracking-tight truncate flex-1 min-w-0"
                       >
                         {condition.label}: {condition.value}
                       </span>
@@ -479,22 +479,21 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
                 })}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center p-8 opacity-20 text-center">
-                <Thermometer className="w-8 h-8 mb-4" />
-                <p className="text-[8px] font-black uppercase tracking-widest">Weather Feed Disabled</p>
+              <div className="flex flex-col items-center justify-center p-12 opacity-20 text-center">
+                <Thermometer className="w-12 h-12 mb-4" />
+                <p className="text-xs font-black uppercase tracking-widest">Weather Feed Disabled</p>
               </div>
             )}
           </div>
-
         </section>
       </main>
 
       {/* Footer Bar: Displaying Active Announcement Ticker */}
       <footer 
-        className="h-10 text-slate-950 flex items-center px-8 z-20"
+        className="h-14 text-slate-950 flex items-center px-8 z-20"
         style={{ backgroundColor: data.theme.accentColor }}
       >
-        <div className="text-[10px] font-bold uppercase tracking-[0.2em] flex-1 truncate overflow-hidden">
+        <div className="text-sm lg:text-base font-bold uppercase tracking-[0.2em] flex-1 truncate overflow-hidden">
           <motion.div
             animate={{ x: [1000, -1000] }}
             transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
