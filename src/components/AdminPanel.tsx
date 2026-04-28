@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Trash2, Save, Monitor, Settings2, Palette, XCircle, ExternalLink, Store, Thermometer, Wind, Sun, Cloud, Droplets, Leaf, Music, Volume2, Layout, Image as ImageIcon, Video, Type, GripVertical } from "lucide-react";
 import { Reorder } from "motion/react";
-import { SignageData, Announcement, GardenCondition } from "../types";
+import { SignageData, Announcement, GardenCondition, ThemeConfig } from "../types";
 import { VISUAL_TEMPLATES } from "../lib/templates";
 import ImageUpload from "./ImageUpload";
 
@@ -592,6 +592,57 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                           </div>
                         </div>
                       </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-white/5 space-y-6">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-black opacity-30 uppercase tracking-widest block">Text Size Controls</label>
+                        <button
+                          onClick={() => setTheme({ 
+                            ...theme, 
+                            baseFontSize: 1,
+                            headerScale: 1,
+                            contentScale: 1,
+                            sidePanelScale: 1,
+                            footerScale: 1
+                          })}
+                          className="px-3 py-1 text-[10px] font-black uppercase tracking-widest border border-white/10 bg-white/5 hover:border-white/20"
+                        >
+                          Reset All
+                        </button>
+                      </div>
+
+                      {[
+                        { label: "Global Scale", key: "baseFontSize", desc: "Overall multiplier for all text" },
+                        { label: "Main Header", key: "headerScale", desc: "Store name and Clock" },
+                        { label: "Slide Content", key: "contentScale", desc: "Main slide headings and text" },
+                        { label: "Side Panel", key: "sidePanelScale", desc: "Weather & Algae metrics" },
+                        { label: "Footer Ticker", key: "footerScale", desc: "Scrolling ticker at bottom" },
+                      ].map((control) => (
+                        <div key={control.key} className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{control.label}</label>
+                            <span className="text-xs font-black font-mono" style={{ color: theme.accentColor }}>
+                              {Math.round(((theme[control.key as keyof ThemeConfig] as number) || 1) * 100)}%
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <input
+                              type="range"
+                              min="0.5"
+                              max="3"
+                              step="0.05"
+                              value={(theme[control.key as keyof ThemeConfig] as number) || 1}
+                              onChange={(e) => setTheme({ ...theme, [control.key]: parseFloat(e.target.value) })}
+                              className="flex-1 accent-emerald-500 h-1"
+                              style={{ accentColor: theme.accentColor }}
+                            />
+                          </div>
+                          <p className="text-[8px] text-slate-500 font-medium uppercase tracking-tight italic">
+                            {control.desc}
+                          </p>
+                        </div>
+                      ))}
                     </div>
 
                     <div className="pt-6 border-t border-white/5">

@@ -19,6 +19,11 @@ export interface ThemeConfig {
   textColor: string;
   fontFamily: string;
   safeAreaPadding?: string; // e.g. "5%" or "20px"
+  baseFontSize?: number; // Master multiplier
+  headerScale?: number;
+  contentScale?: number;
+  sidePanelScale?: number;
+  footerScale?: number;
 }
 
 export interface GardenCondition {

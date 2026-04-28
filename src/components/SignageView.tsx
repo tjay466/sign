@@ -45,6 +45,17 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
     return () => clearInterval(timer);
   }, []);
 
+  // Handle global text scaling
+  useEffect(() => {
+    const scale = data.theme.baseFontSize || 1;
+    // 1rem = scale * 16px. Since most Tailwind classes use rem, 
+    // changing this scales the entire UI proportionally.
+    document.documentElement.style.fontSize = `${scale * 16}px`;
+    return () => {
+      document.documentElement.style.fontSize = ""; // Reset
+    };
+  }, [data.theme.baseFontSize]);
+
   useEffect(() => {
     // Reset index if it gets out of bounds (e.g. after removing items)
     const hasLegacyForecastSlide = data.weatherConfig.showAsSlide && data.forecast?.length > 0;
@@ -120,7 +131,10 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
       >
         <div className="flex-1 flex flex-col bg-black/20 rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative">
           {/* Header Section: Brand & Time */}
-          <header className="h-16 px-8 flex items-center justify-between border-b border-white/10 z-20 bg-black/10">
+          <header 
+            className="h-16 px-8 flex items-center justify-between border-b border-white/10 z-20 bg-black/10"
+            style={{ fontSize: `${(data.theme.headerScale || 1)}rem` }}
+          >
         <div className="flex items-center gap-4">
           {data.logoUrl ? (
             <img src={data.logoUrl} alt={data.storeName} className="h-10 w-auto object-contain" referrerPolicy="no-referrer" />
@@ -169,7 +183,10 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
       {/* Main Content: Split Grid Layout */}
       <main className="flex-1 flex overflow-hidden">
         {/* Left Column: Content Display */}
-        <section className="w-[72%] p-6 lg:p-8 flex flex-col justify-center relative border-r border-white/5 overflow-hidden">
+        <section 
+          className="w-[72%] p-6 lg:p-8 flex flex-col justify-center relative border-r border-white/5 overflow-hidden"
+          style={{ fontSize: `${(data.theme.contentScale || 1)}rem` }}
+        >
           {/* Subtle Water Ripple Background (only for text/media with transparent bg) */}
           {currentAnnouncement?.type === 'text' && (
             <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -188,10 +205,10 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
               {showForecastUI ? (
                 <motion.div
                   key={isLegacyForecastSlide ? "forecast-legacy" : `forecast-${currentAnnouncement?.id}`}
-                  initial={{ opacity: 0, scale: 0.95 }}
+                  initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.05 }}
-                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                  exit={{ opacity: 0, scale: 1.02 }}
+                  transition={{ duration: 0.6, ease: "easeInOut" }}
                   className="h-full flex flex-col justify-center py-4"
                 >
                   <div className="flex flex-col h-full justify-center">
@@ -234,10 +251,10 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
               ) : currentAnnouncement && (
                 <motion.div
                   key={currentAnnouncement.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
+                  initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.05 }}
-                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                  exit={{ opacity: 0, scale: 1.02 }}
+                  transition={{ duration: 0.6, ease: "easeInOut" }}
                   className="h-full flex flex-col justify-center"
                 >
                   {currentAnnouncement.type === 'text' && (
@@ -436,7 +453,10 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
         </section>
 
         {/* Right Column: Information/Secondary section */}
-        <section className="w-[28%] flex flex-col bg-white/5 backdrop-blur-sm overflow-hidden">
+        <section 
+          className="w-[28%] flex flex-col bg-white/5 backdrop-blur-sm overflow-hidden"
+          style={{ fontSize: `${(data.theme.sidePanelScale || 1)}rem` }}
+        >
           <div 
             className="flex-1 p-6 lg:p-10 cursor-pointer hover:bg-white/[0.02] transition-colors group overflow-y-auto"
             onClick={onOpenSettings}
@@ -462,15 +482,15 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
                     <div 
                       key={condition.id} 
                       id={`condition-row-${condition.id}`}
-                      className="flex items-center gap-4 opacity-80 group/cond px-3 py-2 rounded-lg transition-all hover:bg-white/5"
+                      className="flex items-center gap-5 opacity-90 group/cond px-4 py-3 rounded-xl transition-all hover:bg-white/5 bg-white/5 shadow-lg"
                     >
                       <IconComponent 
-                        className="w-5 h-5 flex-shrink-0" 
+                        className="w-6 h-6 lg:w-8 lg:h-8 flex-shrink-0" 
                         style={{ color: data.theme.accentColor }} 
                       />
                       <span 
                         id={`condition-value-${condition.id}`}
-                        className="text-sm lg:text-lg font-medium tracking-tight truncate flex-1 min-w-0"
+                        className="text-lg lg:text-2xl font-bold tracking-tight truncate flex-1 min-w-0"
                       >
                         {condition.label}: {condition.value}
                       </span>
@@ -491,7 +511,10 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
       {/* Footer Bar: Displaying Active Announcement Ticker */}
       <footer 
         className="h-14 text-slate-950 flex items-center px-8 z-20"
-        style={{ backgroundColor: data.theme.accentColor }}
+        style={{ 
+          backgroundColor: data.theme.accentColor,
+          fontSize: `${(data.theme.footerScale || 1)}rem`
+        }}
       >
         <div className="text-sm lg:text-base font-bold uppercase tracking-[0.2em] flex-1 truncate overflow-hidden">
           <motion.div
