@@ -1,4 +1,4 @@
-export type AnnouncementType = "text" | "image" | "youtube" | "template" | "weather";
+export type AnnouncementType = "text" | "image" | "video" | "youtube" | "template" | "weather";
 
 export interface Announcement {
   id: string;

@@ -4,6 +4,7 @@ import { Reorder } from "motion/react";
 import { SignageData, Announcement, GardenCondition, ThemeConfig } from "../types";
 import { VISUAL_TEMPLATES } from "../lib/templates";
 import ImageUpload from "./ImageUpload";
+import VideoUpload from "./VideoUpload";
 
 interface AdminPanelProps {
   data: SignageData;
@@ -323,6 +324,22 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                         <Thermometer className="w-3 h-3" />
                         Add Weather Slide
                       </button>
+                        <button
+                        onClick={() => {
+                          const newAnn = {
+                            id: Math.random().toString(36).substr(2, 9),
+                            type: 'video' as const,
+                            text: 'NEW VIDEO',
+                            duration: 15000,
+                          };
+                          setAnnouncements([...announcements, newAnn]);
+                        }}
+                        className="text-xs flex items-center gap-2 hover:opacity-80 font-black uppercase tracking-widest border-b-2 border-white/10 transition-all hover:border-white/30"
+                        style={{ color: theme.accentColor }}
+                      >
+                        <Video className="w-3 h-3" />
+                        Add Video Slide
+                      </button>
                       <button
                         onClick={() => setActiveTab("library")}
                         className="text-xs flex items-center gap-2 hover:opacity-80 font-black uppercase tracking-widest border-b-2 border-white/10 transition-all hover:border-white/30 text-slate-400"
@@ -355,6 +372,7 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                             >
                               <option value="text">Text Billboard</option>
                               <option value="image">Hero Image</option>
+                              <option value="video">Local Video</option>
                               <option value="youtube">YouTube Feed</option>
                               <option value="template">Visual Template</option>
                               <option value="weather">Weather Forecast</option>
@@ -478,13 +496,19 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                             </div>
                           )}
 
-                          {(ann.type === 'image' || ann.type === 'youtube') && (
+                          {(ann.type === 'image' || ann.type === 'video' || ann.type === 'youtube') && (
                             <div>
                               <label className="text-[10px] font-black opacity-30 uppercase tracking-widest mb-3 block">
-                                {ann.type === 'image' ? 'Image Media' : 'YouTube Video ID'}
+                                {ann.type === 'image' ? 'Image Media' : ann.type === 'video' ? 'Video File' : 'YouTube Video ID'}
                               </label>
                               {ann.type === 'image' ? (
                                 <ImageUpload
+                                  currentUrl={ann.mediaUrl}
+                                  onUpload={(url) => setAnnouncements(announcements.map(a => a.id === ann.id ? { ...a, mediaUrl: url } : a))}
+                                  accentColor={theme.accentColor}
+                                />
+                              ) : ann.type === 'video' ? (
+                                <VideoUpload
                                   currentUrl={ann.mediaUrl}
                                   onUpload={(url) => setAnnouncements(announcements.map(a => a.id === ann.id ? { ...a, mediaUrl: url } : a))}
                                   accentColor={theme.accentColor}
@@ -544,7 +568,7 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                               <span className="text-[10px] font-bold opacity-30 uppercase">sec</span>
                             </div>
                           </div>
-                          {ann.type === 'youtube' && (
+                          { (ann.type === 'youtube' || ann.type === 'video') && (
                             <p className="text-[10px] text-amber-500 font-bold uppercase mt-1">Video will play to end regardless of duration</p>
                           )}
                         </div>

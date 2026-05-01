@@ -10,6 +10,7 @@ const __dirname = path.dirname(__filename);
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
+const VIDEOS_DIR = process.env.VIDEOS_PATH || path.join(process.cwd(), "videos");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 
 // Ensure data directory exists
@@ -22,10 +23,20 @@ if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
+// Ensure videos directory exists (separate from data folder as requested)
+if (!fs.existsSync(VIDEOS_DIR)) {
+  fs.mkdirSync(VIDEOS_DIR, { recursive: true });
+}
+
 // Multer storage configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, UPLOADS_DIR);
+    // Determine destination based on endpoint or file type
+    if (req.path === "/api/upload-video") {
+      cb(null, VIDEOS_DIR);
+    } else {
+      cb(null, UPLOADS_DIR);
+    }
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
@@ -37,14 +48,23 @@ const storage = multer.diskStorage({
 const upload = multer({ 
   storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 50 * 1024 * 1024, // Increased to 50MB for videos
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /image\/(jpeg|jpg|png|gif|webp)/;
-    if (allowedTypes.test(file.mimetype)) {
-      cb(null, true);
+    if (req.path === "/api/upload-video") {
+      const allowedTypes = /video\/(mp4|webm|ogg|quicktime)/;
+      if (allowedTypes.test(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error("Only video files (mp4, webm, ogg, mov) are allowed"));
+      }
     } else {
-      cb(new Error("Only images are allowed"));
+      const allowedTypes = /image\/(jpeg|jpg|png|gif|webp)/;
+      if (allowedTypes.test(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error("Only images are allowed"));
+      }
     }
   }
 });
@@ -57,6 +77,8 @@ async function startServer() {
 
   // Serve uploads directory
   app.use("/uploads", express.static(UPLOADS_DIR));
+  // Serve videos directory (root level)
+  app.use("/videos", express.static(VIDEOS_DIR));
 
   // Default state
   const defaultData = {
@@ -195,6 +217,14 @@ async function startServer() {
     }
     const imageUrl = `/uploads/${req.file.filename}`;
     res.json({ url: imageUrl });
+  });
+
+  app.post("/api/upload-video", upload.single("video"), (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+    const videoUrl = `/videos/${req.file.filename}`;
+    res.json({ url: videoUrl });
   });
 
   app.post("/api/signage", (req, res) => {

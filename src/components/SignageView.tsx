@@ -81,7 +81,7 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
       if (currentAnnouncement?.type === 'weather') {
         timeoutDuration = currentAnnouncement.duration || 10000;
       } else {
-        timeoutDuration = currentAnnouncement?.type === 'youtube' 
+        timeoutDuration = (currentAnnouncement?.type === 'youtube' || currentAnnouncement?.type === 'video') 
           ? Math.max(currentAnnouncement.duration || 0, 600000) 
           : currentAnnouncement?.duration || 5000;
       }
@@ -286,6 +286,22 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
                           </h2>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {currentAnnouncement.type === 'video' && (
+                    <div className="relative w-full h-full rounded-xl overflow-hidden shadow-2xl border border-white/10 bg-black">
+                      <video
+                        src={currentAnnouncement.mediaUrl}
+                        autoPlay
+                        muted={isMuted}
+                        className="w-full h-full object-contain"
+                        onEnded={() => {
+                          const hasLegacyForecastSlide = data.weatherConfig.showAsSlide && data.forecast?.length > 0;
+                          const effectiveSlidesCount = data.announcements.length + (hasLegacyForecastSlide ? 1 : 0);
+                          setCurrentIndex((prev) => (prev + 1) % effectiveSlidesCount);
+                        }}
+                      />
                     </div>
                   )}
 
