@@ -151,13 +151,12 @@ async function startServer() {
       const unitParam = units === 'imperial' ? '&temperature_unit=fahrenheit&wind_speed_unit=mph' : '';
       
       // We fetch current temp, wind, current uv index, daily max UV index, and forecast
-      // We specifically use gem_seamless for Canadian accuracy, falling back to default ensemble
-      const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m,uv_index&daily=uv_index_max,temperature_2m_max,temperature_2m_min,weather_code&timezone=auto${unitParam}&models=gem_seamless`);
+      // We use the default best-match ensemble for global accuracy as gem_seamless may lack specific radiation data (UV)
+      const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m,uv_index&daily=uv_index_max,temperature_2m_max,temperature_2m_min,weather_code&timezone=auto${unitParam}`);
       const data = await response.json();
       
-      // Extract data from standard keys or model-specific keys
-      const current = data.current || data.current_gem_seamless;
-      const daily = data.daily || data.daily_gem_seamless;
+      const current = data.current;
+      const daily = data.daily;
 
       if (current && daily) {
         const uvIndexMax = daily.uv_index_max?.[0] ?? 0;
@@ -178,11 +177,15 @@ async function startServer() {
           if (c.id === "weather-temp") return { 
             ...c, 
             label: `${city} Air`, 
-            // Use 1 decimal for better precision as requested for accuracy
             value: `${temp.toFixed(1)}${tempSymbol}` 
           };
           if (c.id === "weather-wind") return { ...c, value: `${Math.round(current.wind_speed_10m)} ${windSymbol}` };
-          if (c.id === "weather-uv") return { ...c, value: `${currentUV.toFixed(1)}` };
+          if (c.id === "weather-uv") {
+            // Display current UV with the day's peak in parentheses for clarity
+            const peak = Math.round(uvIndexMax);
+            const displayValue = `${currentUV.toFixed(1)} (Peak: ${peak})`;
+            return { ...c, value: displayValue };
+          }
           if (c.id === "weather-algae") return { ...c, value: risk };
           return c;
         });
