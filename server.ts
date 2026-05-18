@@ -230,6 +230,25 @@ async function startServer() {
     res.json({ url: videoUrl });
   });
 
+  app.get("/api/videos", (req, res) => {
+    try {
+      if (!fs.existsSync(VIDEOS_DIR)) {
+        return res.json([]);
+      }
+      const files = fs.readdirSync(VIDEOS_DIR);
+      const videos = files
+        .filter(file => /\.(mp4|webm|ogg|mov)$/i.test(file))
+        .map(file => ({
+          name: file,
+          url: `/videos/${file}`
+        }));
+      res.json(videos);
+    } catch (error) {
+      console.error("Failed to list videos:", error);
+      res.status(500).json({ error: "Failed to list videos" });
+    }
+  });
+
   app.post("/api/signage", (req, res) => {
     const oldConfig = JSON.stringify(signageData.weatherConfig);
     signageData = {
