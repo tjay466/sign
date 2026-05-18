@@ -224,7 +224,7 @@ export default function VideoUpload({ onUpload, currentUrl, label, accentColor =
                     Upload Video
                   </button>
                   <p className="text-[9px] opacity-30 font-bold uppercase tracking-widest">
-                    MP4, WEBM (UP TO 50MB)
+                    MP4, WEBM, MOV (UP TO 250MB)
                   </p>
                 </div>
               )}

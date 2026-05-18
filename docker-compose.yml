@@ -1,15 +1,19 @@
 services:
   signage:
-    image: ghcr.io/tjay466/sign:latest
+    build: .
     container_name: signage_display
     ports:
       - "3000:3000"
     volumes:
       - ./data:/app/data
+      # Map your video folder here. 
+      # Replace "/path/to/your/external/videos" with the actual path on your drive.
+      - /path/to/your/external/videos:/app/videos
     environment:
       - NODE_ENV=production
+      - VIDEOS_PATH=/app/videos
     healthcheck:
-      test: ["CMD", "node", "--eval", "fetch('http://localhost:3000/api/signage').then(res => res.ok ? process.exit(0) : process.exit(1))"]
+      test: ["CMD", "node", "--eval", "fetch('http://localhost:3000/api/health').then(res => res.ok ? process.exit(0) : process.exit(1))"]
       interval: 30s
       timeout: 10s
       retries: 3

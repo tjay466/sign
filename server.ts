@@ -10,7 +10,10 @@ const __dirname = path.dirname(__filename);
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
-const VIDEOS_DIR = process.env.VIDEOS_PATH || path.join(process.cwd(), "videos");
+const VIDEOS_DIR = process.env.VIDEOS_PATH ? 
+  (path.isAbsolute(process.env.VIDEOS_PATH) ? process.env.VIDEOS_PATH : path.join(process.cwd(), process.env.VIDEOS_PATH)) : 
+  path.join(process.cwd(), "videos");
+
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 
 // Ensure data directory exists
@@ -23,9 +26,13 @@ if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
-// Ensure videos directory exists (separate from data folder as requested)
-if (!fs.existsSync(VIDEOS_DIR)) {
-  fs.mkdirSync(VIDEOS_DIR, { recursive: true });
+// Ensure videos directory exists
+try {
+  if (!fs.existsSync(VIDEOS_DIR)) {
+    fs.mkdirSync(VIDEOS_DIR, { recursive: true });
+  }
+} catch (err) {
+  console.error(`Warning: Could not create videos directory at ${VIDEOS_DIR}:`, err);
 }
 
 // Multer storage configuration
@@ -40,23 +47,23 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + "-" + uniqueSuffix + ext);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
   },
 });
 
 const upload = multer({ 
   storage,
   limits: {
-    fileSize: 50 * 1024 * 1024, // Increased to 50MB for videos
+    fileSize: 250 * 1024 * 1024, // Increased to 250MB for larger videos
   },
   fileFilter: (req, file, cb) => {
     if (req.path === "/api/upload-video") {
       const allowedTypes = /video\/(mp4|webm|ogg|quicktime)/;
-      if (allowedTypes.test(file.mimetype)) {
+      const isAllowed = allowedTypes.test(file.mimetype) || /\.(mp4|webm|ogg|mov)$/i.test(file.originalname);
+      if (isAllowed) {
         cb(null, true);
       } else {
-        cb(new Error("Only video files (mp4, webm, ogg, mov) are allowed"));
+        cb(new Error("Format not supported. Use MP4, WebM, or MOV."));
       }
     } else {
       const allowedTypes = /image\/(jpeg|jpg|png|gif|webp)/;
@@ -74,6 +81,11 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(express.json());
+
+  // API Health check
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok" });
+  });
 
   // Serve uploads directory
   app.use("/uploads", express.static(UPLOADS_DIR));
@@ -222,12 +234,24 @@ async function startServer() {
     res.json({ url: imageUrl });
   });
 
-  app.post("/api/upload-video", upload.single("video"), (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
-    const videoUrl = `/videos/${req.file.filename}`;
-    res.json({ url: videoUrl });
+  app.post("/api/upload-video", (req, res) => {
+    upload.single("video")(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ error: "File too large. Max size is 250MB." });
+        }
+        return res.status(400).json({ error: err.message });
+      } else if (err) {
+        return res.status(400).json({ error: err.message });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const videoUrl = `/videos/${req.file.filename}`;
+      res.json({ url: videoUrl });
+    });
   });
 
   app.get("/api/videos", (req, res) => {
