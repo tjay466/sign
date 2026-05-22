@@ -508,11 +508,109 @@ export default function AdminPanel({ data, onUpdate, onClose }: AdminPanelProps)
                                   accentColor={theme.accentColor}
                                 />
                               ) : ann.type === 'video' ? (
-                                <VideoUpload
-                                  currentUrl={ann.mediaUrl}
-                                  onUpload={(url) => setAnnouncements(announcements.map(a => a.id === ann.id ? { ...a, mediaUrl: url } : a))}
-                                  accentColor={theme.accentColor}
-                                />
+                                <div className="space-y-4">
+                                  {/* List of current videos on this slide */}
+                                  <div className="space-y-3">
+                                    <label className="text-[10px] font-black opacity-30 uppercase tracking-widest block">
+                                      Selected Videos for this Slide
+                                    </label>
+                                    
+                                    {(!ann.videoUrls || ann.videoUrls.length === 0) && !ann.mediaUrl ? (
+                                      <div className="p-6 bg-black/20 border border-white/5 text-center text-xs opacity-50 font-bold uppercase tracking-wider">
+                                        No videos added to this slide yet.
+                                      </div>
+                                    ) : (
+                                      <div className="space-y-2 border border-white/10 p-4 bg-black/10">
+                                        {/* Fallback to legacy single mediaUrl if videoUrls doesn't exist yet */}
+                                        {(() => {
+                                          const urls = ann.videoUrls && ann.videoUrls.length > 0 
+                                            ? ann.videoUrls 
+                                            : (ann.mediaUrl ? [ann.mediaUrl] : []);
+                                          
+                                          return urls.map((url, uidx) => {
+                                            const filename = url.split("/").pop() || url;
+                                            return (
+                                              <div 
+                                                key={uidx} 
+                                                className="flex items-center gap-3 p-2 bg-white/5 border border-white/5 hover:bg-white/10 transition-colors"
+                                              >
+                                                <div className="w-8 h-8 bg-black/40 flex items-center justify-center flex-shrink-0 border border-white/10">
+                                                  <Video className="w-4 h-4 opacity-40 text-emerald-400" />
+                                                </div>
+                                                <div className="flex-1 truncate">
+                                                  <div className="text-[11px] font-bold text-white truncate">
+                                                    {filename}
+                                                  </div>
+                                                  <div className="text-[8px] opacity-35 font-mono truncate">
+                                                    {url}
+                                                  </div>
+                                                </div>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    // Filter out this url
+                                                    const newUrls = urls.filter((_, i) => i !== uidx);
+                                                    setAnnouncements(announcements.map(a => {
+                                                      if (a.id === ann.id) {
+                                                        return { 
+                                                          ...a, 
+                                                          videoUrls: newUrls,
+                                                          // Sync mediaUrl to play something if legacy client
+                                                          mediaUrl: newUrls[0] || ""
+                                                        };
+                                                      }
+                                                      return a;
+                                                    }));
+                                                  }}
+                                                  className="p-1.5 hover:text-red-500 hover:bg-red-500/10 text-white/40 transition-all font-bold"
+                                                  title="Remove video from slide"
+                                                >
+                                                  Remove
+                                                </button>
+                                              </div>
+                                            );
+                                          });
+                                        })()}
+                                        
+                                        {ann.videoUrls && ann.videoUrls.length > 1 && (
+                                          <div className="pt-2 flex items-center gap-2 text-[10px] text-emerald-400 font-bold uppercase tracking-widest bg-emerald-500/5 p-2 border border-emerald-500/10">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                            <span>Shuffle Enabled: picking one video at random on slide trigger</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Add/Upload Video control */}
+                                  <div className="pt-2">
+                                    <VideoUpload
+                                      label="Add Another Video to Slide"
+                                      onUpload={(url) => {
+                                        // Append to videoUrls
+                                        const currentUrls = ann.videoUrls && ann.videoUrls.length > 0
+                                          ? ann.videoUrls
+                                          : (ann.mediaUrl ? [ann.mediaUrl] : []);
+                                        
+                                        // Ignore duplicate if already added
+                                        if (currentUrls.includes(url)) return;
+                                        
+                                        const newUrls = [...currentUrls, url];
+                                        setAnnouncements(announcements.map(a => {
+                                          if (a.id === ann.id) {
+                                            return {
+                                              ...a,
+                                              videoUrls: newUrls,
+                                              mediaUrl: newUrls[0] // Ensure mediaUrl points to first video as fallback
+                                            };
+                                          }
+                                          return a;
+                                        }));
+                                      }}
+                                      accentColor={theme.accentColor}
+                                    />
+                                  </div>
+                                </div>
                               ) : (
                                 <div className="flex gap-4">
                                   <input

@@ -15,6 +15,7 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
   const [isMuted, setIsMuted] = useState(true);
   const [audioError, setAudioError] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const lastSelectedVideoRef = useRef<{ index: number; url: string; annId: string }>({ index: -1, url: "", annId: "" });
 
   // Sync background music
   useEffect(() => {
@@ -96,6 +97,31 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
 
   const isLegacyForecastSlide = data.weatherConfig.showAsSlide && data.forecast?.length > 0 && currentIndex === data.announcements.length;
   const currentAnnouncement = isLegacyForecastSlide ? null : data.announcements[currentIndex];
+
+  let activeVideoUrl = "";
+  if (currentAnnouncement && currentAnnouncement.type === 'video') {
+    const urls = currentAnnouncement.videoUrls && currentAnnouncement.videoUrls.length > 0
+      ? currentAnnouncement.videoUrls
+      : (currentAnnouncement.mediaUrl ? [currentAnnouncement.mediaUrl] : []);
+
+    if (urls.length > 0) {
+      if (
+        lastSelectedVideoRef.current.index !== currentIndex || 
+        lastSelectedVideoRef.current.annId !== currentAnnouncement.id ||
+        !urls.includes(lastSelectedVideoRef.current.url)
+      ) {
+        // Pick random video url synchronously
+        const randomIndex = Math.floor(Math.random() * urls.length);
+        lastSelectedVideoRef.current = {
+          index: currentIndex,
+          annId: currentAnnouncement.id,
+          url: urls[randomIndex]
+        };
+      }
+      activeVideoUrl = lastSelectedVideoRef.current.url;
+    }
+  }
+
   const isExplicitForecastSlide = currentAnnouncement?.type === 'weather';
   const showForecastUI = isLegacyForecastSlide || isExplicitForecastSlide;
 
@@ -290,11 +316,13 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
                   )}
 
                   {currentAnnouncement.type === 'video' && (
-                    <div className="relative w-full h-full rounded-xl overflow-hidden shadow-2xl border border-white/10 bg-black">
+                    <div className="relative w-full h-full rounded-xl overflow-hidden shadow-2xl border border-white/10 bg-black group/video">
                       <video
-                        src={currentAnnouncement.mediaUrl}
+                        src={activeVideoUrl || currentAnnouncement.mediaUrl}
                         autoPlay
                         muted={isMuted}
+                        controls
+                        playsInline
                         className="w-full h-full object-contain"
                         onEnded={() => {
                           const hasLegacyForecastSlide = data.weatherConfig.showAsSlide && data.forecast?.length > 0;
@@ -315,7 +343,7 @@ export default function SignageView({ data, onOpenSettings }: SignageViewProps) 
                           playerVars: {
                             autoplay: 1,
                             mute: isMuted ? 1 : 0, 
-                            controls: 0,
+                            controls: 1,
                             modestbranding: 1,
                             rel: 0,
                             iv_load_policy: 3,

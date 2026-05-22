@@ -11,6 +11,7 @@ export interface Announcement {
   cta?: string;
   price?: string;
   forecastDays?: 3 | 7;
+  videoUrls?: string[]; // Multiple video choices for random selection
 }
 
 export interface ThemeConfig {
